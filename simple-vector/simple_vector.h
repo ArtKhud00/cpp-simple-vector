@@ -1,6 +1,3 @@
-// вставьте сюда ваш код для класса SimpleVector
-// внесите необходимые изменения для поддержки move-семантики
-
 #pragma once
 
 #include <cassert>
@@ -92,11 +89,13 @@ public:
 
     // Возвращает ссылку на элемент с индексом index
     Type& operator[](size_t index) noexcept {
+        assert(index < size_);
         return items_[index];
     }
 
     // Возвращает константную ссылку на элемент с индексом index
     const Type& operator[](size_t index) const noexcept {
+        assert(index < size_);
         return items_[index];
     }
 
@@ -151,13 +150,13 @@ public:
     // Возвращает итератор на начало массива
     // Для пустого массива может быть равен (или не равен) nullptr
     Iterator begin() noexcept {
-        return Iterator{ &items_[0] };
+        return Iterator{ items_.Get() };
     }
 
     // Возвращает итератор на элемент, следующий за последним
     // Для пустого массива может быть равен (или не равен) nullptr
     Iterator end() noexcept {
-        return Iterator{ &items_[size_] };
+        return Iterator{ items_.Get() + size_ };
     }
 
     // Возвращает константный итератор на начало массива
@@ -175,13 +174,13 @@ public:
     // Возвращает константный итератор на начало массива
     // Для пустого массива может быть равен (или не равен) nullptr
     ConstIterator cbegin() const noexcept {
-        return ConstIterator{ &items_[0] };
+        return ConstIterator{ items_.Get() };
     }
 
     // Возвращает итератор на элемент, следующий за последним
     // Для пустого массива может быть равен (или не равен) nullptr
     ConstIterator cend() const noexcept {
-        return ConstIterator{ &items_[size_] };
+        return ConstIterator{ items_.Get() + size_ };
     }
 
     SimpleVector& operator=(const SimpleVector& rhs) {
@@ -193,11 +192,10 @@ public:
     }
 
     SimpleVector& operator=(const SimpleVector&& rhs) {
-        ArrayPtr<Type> newptr(rhs.size_);
-        std::move(rhs.begin(), rhs.end(), newptr.Get());
-        items_.swap(newptr);
-        size_ = std::move(rhs.size_);
-        capacity_ = size_;
+        if (this != &rhs) {
+            SimpleVector tmp(rhs);
+            swap(tmp);
+        }
         return *this;
     }
 
@@ -288,15 +286,15 @@ public:
 
     // "Удаляет" последний элемент вектора. Вектор не должен быть пустым
     void PopBack() noexcept {
-        // Напишите тело самостоятельно
-        if (size_) {
+        assert(size_ > 0);
+        if (!IsEmpty()) {
             --size_;
         }
     }
 
     // Удаляет элемент вектора в указанной позиции
     Iterator Erase(ConstIterator pos) {
-        assert(pos >= begin() && pos <= end());
+        assert(!IsEmpty() && pos >= begin() && pos <= end());
         Iterator poz = const_cast<Iterator>(pos);
         std::move(std::next(Iterator(pos)), end(), Iterator(pos));
         --size_;
@@ -334,7 +332,10 @@ ReserveProxyObj Reserve(size_t capacity_to_reserve) {
 
 template <typename Type>
 inline bool operator==(const SimpleVector<Type>& lhs, const SimpleVector<Type>& rhs) {
-    return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+    if (lhs.GetSize() == rhs.GetSize()) {
+        return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+    }
+    return false;
 }
 
 template <typename Type>
