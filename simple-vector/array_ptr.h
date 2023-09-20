@@ -1,11 +1,8 @@
-// вставьте сюда ваш код для класса ArrayPtr
-// внесите в него изменения, 
-// которые позволят реализовать move-семантику
-
 #pragma once
 
 #include <cassert>
 #include <cstdlib>
+#include <utility>
 
 template <typename Type>
 class ArrayPtr {
